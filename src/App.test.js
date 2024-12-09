@@ -1,8 +1,15 @@
 import { render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureMockStore from 'redux-mock-store';
 import App from './App';
+import { fetchSankeyData } from './actions';
+import ErrorBoundary from "./components/ErrorBoundary";
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
-});
+jest.mock('./actions', () => ({
+  fetchSankeyData: jest.fn(() => ({ type: 'FETCH_SANKEY_DATA' })),
+}));
+
+const mockStore = configureMockStore();
+const store = mockStore({});
+
+
