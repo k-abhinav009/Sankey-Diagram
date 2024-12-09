@@ -67,7 +67,7 @@ const UpdateData = () => {
   
         // Check if new total outflows exceed total inflows
         if (newOutflowsSum > inflowTotal) {
-          alert("Total outflows cannot exceed total inflows!");
+          alert(t('alertMessageTotal'));
           return; // Prevent the update
         }
   
@@ -89,7 +89,7 @@ const UpdateData = () => {
   
           // Ensure that the child outflows sum does not exceed the parent outflow value
           if (childOutflowsSum > parentValue) {
-            alert("Child outflows cannot exceed the value of their parent outflow!");
+            alert(t('alertMessageChild'));
             return; // Prevent the update
           }
         }

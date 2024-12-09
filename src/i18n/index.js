@@ -27,7 +27,9 @@ i18n
           Cancel:"Cancel",
           deleteText:"are you sure you want to delete",
           "Add {{category}}": "Add {{category}}",
-          "Total Inflows":"Total Inflows"
+          "Total Inflows":"Total Inflows",
+          alertMessageTotal:"Total outflows cannot exceed total inflows!",
+          alertMessageChild:"Child outflows cannot exceed the value of their parent outflow!"
 
 
         },
@@ -54,7 +56,9 @@ i18n
           Cancel:"Annuler",
           deleteText:"Êtes-vous sûr de vouloir supprimer",
           "Add {{category}}": "Ajouter {{Outflows}}",
-          "Total Inflows":"Entrées totales"
+          "Total Inflows":"Entrées totales",
+          alertMessageTotal:"Le total des sorties ne peut pas dépasser le total des entrées !",
+          alertMessageChild:"Les sorties enfants ne peuvent pas dépasser la valeur de leur sortie parent !"
 
         },
       },
