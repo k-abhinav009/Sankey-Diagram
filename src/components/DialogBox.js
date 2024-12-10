@@ -17,13 +17,18 @@ const DialogBox = ({ type, category, item, parent, onSubmit, onClose }) => {
   const [childValue, setChildValue] = useState("");
   const [id, setId] = useState("");
   const { t } = useTranslation();
-  // Determine if Save button should be disabled
+
   const isSaveDisabled = () => {
-    if (type === "delete") return false;
+    if (type === "delete") return false; // Always allow Delete
     if (parent) {
-      return !childName || !childValue; // For child outflows, check child fields
+      return !childName || !childValue || parseFloat(childValue) === 0; // Disable if childValue is 0
     }
-    return !name || !value || (category === "inflows" && !details); // For general case
+    return (
+      !name ||
+      !value ||
+      parseFloat(value) === 0 ||
+      (category === "inflows" && !details)
+    );
   };
 
   useEffect(() => {
@@ -47,6 +52,10 @@ const DialogBox = ({ type, category, item, parent, onSubmit, onClose }) => {
 
   // Handle Submit for Add/Edit
   const handleSubmit = () => {
+    if (parseFloat(value) === 0 || (parent && parseFloat(childValue) === 0)) {
+    //   alert(t("Value cannot be 0")); 
+      return;
+    }
     const newItem = {
       name,
       value: parseFloat(value),
@@ -54,8 +63,7 @@ const DialogBox = ({ type, category, item, parent, onSubmit, onClose }) => {
       id,
     };
     if (parent) {
-      newItem.children = [];
-      // If parent is present, it's a child outflow
+      // If parent exists, this is a child outflow
       newItem.name = childName;
       newItem.value = parseFloat(childValue);
     }
@@ -78,12 +86,14 @@ const DialogBox = ({ type, category, item, parent, onSubmit, onClose }) => {
       <DialogContent>
         {type !== "delete" && (
           <>
+            {/* Parent fields */}
             <TextField
               label={t("Name")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               fullWidth
               margin="normal"
+              disabled={!!parent}
             />
             <TextField
               label={t("Value")}
@@ -92,18 +102,21 @@ const DialogBox = ({ type, category, item, parent, onSubmit, onClose }) => {
               onChange={(e) => setValue(e.target.value)}
               fullWidth
               margin="normal"
-              disabled={parent && (childName || childValue)} 
+              disabled={!!parent}
             />
-            {category === "inflows" && (
+
+            {/* Details for inflows */}
+            {category === "inflows" && !parent && (
               <TextField
                 label={t("Details")}
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
                 fullWidth
                 margin="normal"
-                disabled={parent && (childName || childValue)} 
               />
             )}
+
+            {/* Child fields */}
             {parent && (
               <>
                 <TextField
@@ -117,7 +130,9 @@ const DialogBox = ({ type, category, item, parent, onSubmit, onClose }) => {
                   label={t("ChildValue")}
                   type="number"
                   value={childValue}
-                  onChange={(e) => setChildValue(e.target.value)}
+                  onChange={(e) =>
+                    setChildValue(e.target.value.replace(/[^0-9.]/g, ""))
+                  }
                   fullWidth
                   margin="normal"
                 />

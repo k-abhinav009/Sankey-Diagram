@@ -3,20 +3,40 @@ import Header from "../components/Header";
 import SankeyDiagram from "../components/SankeyDiagram";
 import { useSelector } from "react-redux";
 import UpdateData from "./UpdateSalaryAndExpenditure";
-import { Box } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import { transformDataForSankey } from "../utils";
+import { useTranslation } from "react-i18next";
 
 const SankeySalary = () => {
   const data = useSelector((state) => state.chartData);
   const loading = useSelector((state) => state.chartData.loading);
 
+  const handleRetry = () => {
+    window.location.reload(); 
+  };
+  const { t } = useTranslation();
+
   return (
     <>
-      {loading || data.inflows.length<1? (
-        <div>loading..</div>
+      {loading ? (
+        <div style={{ textAlign: "center", marginTop: "20px" }}>
+          <p>{t("loading")}</p>
+        </div>
+      ) : data.inflows.length < 1 && data.outflows.length < 1 ? (
+        <div style={{ textAlign: "center", marginTop: "20px" }}>
+          <p>{t("noData")};</p>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleRetry}
+            style={{ marginTop: "10px" }}
+          >
+            {t("retry")}
+          </Button>
+        </div>
       ) : (
         <>
-          <Header title={'SalaryExpenditure'} />
+          <Header title="SalaryExpenditure" />
           <Box
             sx={{
               display: "flex",

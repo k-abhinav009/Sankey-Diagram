@@ -37,60 +37,91 @@ const UpdateData = () => {
   // Close Dialog
   const closeDialog = () => {
     setIsDialogOpen(false);
-    setShowAddOptions(false); // Reset add options when closing dialog
+    setShowAddOptions(false);
   };
 
   // Handle Add/Edit/Delete
   const handleDialogSubmit = (type, newItem, category, parent) => {
     const updatedData = { ...data };
-  
-    if (type === "add" || type === "edit") {
+    debugger
+    if (type === "add" || type === "edit" || type === "delete") {
       if (category === "outflows") {
-        // Calculate total current outflows and inflows
-        const totalOutflows = updatedData.outflows.reduce((sum, outflow) => sum + outflow.value, 0);
-        const inflowTotal = updatedData.inflows.reduce((sum, inflow) => sum + inflow.value, 0);
-  
-        let newOutflowsSum = totalOutflows;
-  
-        // Calculate new total outflows based on type
-        if (type === "add") {
-          newOutflowsSum += newItem.value;
-        } else if (type === "edit") {
-          // Determine the previous value of the outflow being edited
-          const oldOutflow = parent
-            ? parent.children.find((child) => child.id === newItem.id)
-            : updatedData.outflows.find((outflow) => outflow.id === newItem.id);
-  
-          const oldValue = oldOutflow ? oldOutflow.value : 0;
-          newOutflowsSum = totalOutflows - oldValue + newItem.value;
-        }
-  
-        // Check if new total outflows exceed total inflows
-        if (newOutflowsSum > inflowTotal) {
-          alert(t('alertMessageTotal'));
+        // Calculate total parent outflows (exclude children) and total inflows
+        let parentOutflows = updatedData.outflows.reduce(
+          (sum, outflow) => {if(outflow.id==newItem.id) return sum + (parseFloat(newItem.value) || 0)
+            return sum + (parseFloat(outflow.value) || 0)
+          },
+          0
+        );
+        const inflowTotal = updatedData.inflows.reduce(
+          (sum, inflow) => sum + (parseFloat(inflow.value) || 0),
+          0
+        );
+        if(!parent && type=="add")
+         parentOutflows+=newItem.value
+        // Check if total parent outflows exceed inflows
+        if (parentOutflows > inflowTotal) {
+          alert(t("alertMessageTotal"));
           return; // Prevent the update
         }
-  
-        // Validation: Ensure child outflows do not exceed the parent outflow
+         if(type=="edit" && !parent){
+          const currentParentOutflows = updatedData.outflows.find((key)=>newItem.id==key.id)
+          const currentParentOutflowsum = currentParentOutflows.children.reduce((sum, child) => {
+            
+            return sum + (parseFloat(child.value) || 0);
+          }, 0)
+          if(currentParentOutflowsum>newItem.value){
+            alert(t("alertMessageChild"));
+            return;
+          }
+         }
         if (parent) {
-          // Recalculate child outflows sum, including the new/edited value
-          const childOutflowsSum = parent.children
+          let childOutflowsSum = parent.children
             ? parent.children.reduce((sum, child) => {
                 if (child.id === newItem.id) {
-                  return sum + newItem.value; // Replace old value with the new value for the current child
+                  return sum + (parseFloat(newItem.value) || 0);
                 }
-                return sum + child.value;
+                return sum + (parseFloat(child.value) || 0);
               }, 0)
-            : newItem.value;
+            : parseFloat(newItem.value) || 0;
   
-          // Validate the sum of children does not exceed the parent value
-          const parentOutflow = updatedData.outflows.find((outflow) => outflow.id === parent.id);
-          const parentValue = parentOutflow ? parentOutflow.value : parent.value;
+          const parentValue = parseFloat(parent.value) || 0;
+          if(type==="add")
+          childOutflowsSum+=newItem.value
   
-          // Ensure that the child outflows sum does not exceed the parent outflow value
           if (childOutflowsSum > parentValue) {
-            alert(t('alertMessageChild'));
-            return; // Prevent the update
+            alert(t("alertMessageChild"));
+            return; 
+          }
+        }
+      } else if (category === "inflows") {
+        const parentOutflows = updatedData.outflows.reduce(
+          (sum, outflow) => sum + (parseFloat(outflow.value) || 0),
+          0
+        );
+  
+        const inflowTotal = updatedData.inflows.reduce(
+          (sum, inflow) => sum + (parseFloat(inflow.value) || 0),
+          0
+        );
+  
+        if (type === "edit") {
+       
+          const oldInflow = updatedData.inflows.find((inflow) => inflow.id === newItem.id);
+          const oldValue = parseFloat(oldInflow?.value || 0);
+          const newValue = parseFloat(newItem.value || 0);
+  
+          if (inflowTotal - oldValue + newValue < parentOutflows) {
+            alert(t("alertMessageInflow"));
+            return; 
+          }
+        } else if (type === "delete") {
+          const inflowToDelete = updatedData.inflows.find((inflow) => inflow.id === newItem.id);
+          const deleteValue = parseFloat(inflowToDelete?.value || 0);
+  
+          if (inflowTotal - deleteValue < parentOutflows) {
+            alert(t("alertMessageInflow"));
+            return; 
           }
         }
       }
@@ -100,86 +131,38 @@ const UpdateData = () => {
     if (type === "add" || type === "edit") {
       if (category === "outflows") {
         if (parent) {
-          // Add/Edit child in the parent outflow
           const parentIndex = updatedData.outflows.findIndex((outflow) => outflow.id === parent.id);
-          if (type === "add") {
-            const dispatchItem = {
-              newItem,
-              addType: "outflows",
-              addparent: parentIndex,
-            };
-            dispatch(addChartData(dispatchItem));
-          } else {
-            const dispatchItem = {
-              editItem: newItem,
-              editParent: parentIndex,
-              type: "outflows",
-            };
-            dispatch(editChartData(dispatchItem));
-          }
+          const dispatchItem =
+            type === "add"
+              ? { newItem, addType: "outflows", addparent: parentIndex }
+              : { editItem: newItem, editParent: parentIndex, type: "outflows" };
+          dispatch(type === "add" ? addChartData(dispatchItem) : editChartData(dispatchItem));
         } else {
-          // Add/Edit parent-level outflows
-          if (type === "add") {
-            const dispatchItem = {
-              newItem,
-              addType: "outflows",
-              addparent: parent,
-            };
-            dispatch(addChartData(dispatchItem));
-          } else {
-            const dispatchItem = {
-              editItem: newItem,
-              editParent: parent,
-              type: "outflows",
-            };
-            dispatch(editChartData(dispatchItem));
-          }
+          const dispatchItem =
+            type === "add"
+              ? { newItem, addType: "outflows", addparent: parent }
+              : { editItem: newItem, editParent: parent, type: "outflows" };
+          dispatch(type === "add" ? addChartData(dispatchItem) : editChartData(dispatchItem));
         }
       } else if (category === "inflows") {
-        // Add/Edit inflows
-        if (type === "add") {
-          const dispatchItem = {
-            newItem,
-            addType: "inflows",
-            parent,
-          };
-          dispatch(addChartData(dispatchItem));
-        } else {
-          const dispatchItem = {
-            editItem: newItem,
-            parent,
-            type: "inflows",
-          };
-          dispatch(editChartData(dispatchItem));
-        }
+        const dispatchItem =
+          type === "add"
+            ? { newItem, addType: "inflows", parent }
+            : { editItem: newItem, parent, type: "inflows" };
+        dispatch(type === "add" ? addChartData(dispatchItem) : editChartData(dispatchItem));
       }
     } else if (type === "delete") {
       if (category === "outflows") {
         if (parent) {
-          // Delete child
           const parentIndex = updatedData.outflows.findIndex((outflow) => outflow.id === parent.id);
-          const dispatchItem = {
-            id: newItem.id,
-            deleteParent: parentIndex,
-            deleteType: "outflows",
-          };
+          const dispatchItem = { id: newItem.id, deleteParent: parentIndex, deleteType: "outflows" };
           dispatch(deleteChartData(dispatchItem));
         } else {
-          // Delete parent-level outflow
-          const dispatchItem = {
-            id: newItem.id,
-            parent,
-            deleteType: "outflows",
-          };
+          const dispatchItem = { id: newItem.id, parent, deleteType: "outflows" };
           dispatch(deleteChartData(dispatchItem));
         }
       } else if (category === "inflows") {
-        // Delete inflows
-        const dispatchItem = {
-          id: newItem.id,
-          parent,
-          deleteType: "inflows",
-        };
+        const dispatchItem = { id: newItem.id, parent, deleteType: "inflows" };
         dispatch(deleteChartData(dispatchItem));
       }
     }
@@ -187,8 +170,6 @@ const UpdateData = () => {
     setData(updatedData);
     closeDialog();
   };
-  
-  
   
   return (
     <div style={{ padding: "10px" }}>
@@ -253,7 +234,7 @@ const UpdateData = () => {
                 onClick={() => openDialog("delete", "inflows", inflow)}
                 style={{ marginLeft: "10px" }}
               >
-               {t('Delete')}
+               {t('delete')}
               </Button>
             </div>
           ))}
